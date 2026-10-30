@@ -51,9 +51,11 @@ describe("vercel: resolveVercelRuntime", () => {
     ["22.x", "nodejs22.x"],
     ["^22", "nodejs22.x"],
     [">=20 <24", "nodejs22.x"],
-    [">=22.0.0", "nodejs24.x"],
+    [">=22.0.0", "nodejs26.x"],
     [">=24.20.0 <25", "nodejs24.x"],
-    ["^20.19.0 || >=22.12.0", "nodejs24.x"],
+    ["^24 || ^26", "nodejs26.x"],
+    ["26.x", "nodejs26.x"],
+    ["^20.19.0 || >=22.12.0", "nodejs26.x"],
   ])(
     "uses the newest supported Node.js version matching engines.node %s",
     async (node, expected) => {
@@ -128,7 +130,7 @@ describe("vercel: resolveVercelRuntime", () => {
     expect(await resolveRuntime()).toBe("bun1.x");
   });
 
-  it.each(["20.x", "18.x", ">=26", "lts/*"])(
+  it.each(["20.x", "18.x", ">=27", "lts/*"])(
     "warns and uses the build Node.js version when engines.node %s matches no supported version",
     async (node) => {
       const fallback = await resolveRuntime({ engines: { node } });

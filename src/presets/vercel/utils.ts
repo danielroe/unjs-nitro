@@ -34,7 +34,7 @@ import { ISR_URL_PARAM } from "./runtime/isr.ts";
 // https://vercel.com/docs/build-output-api/configuration
 
 // https://vercel.com/docs/functions/runtimes/node-js/node-js-versions
-const SUPPORTED_NODE_VERSIONS = [22, 24];
+const SUPPORTED_NODE_VERSIONS = [22, 24, 26];
 
 // h3 ProxyOptions that Vercel CDN rewrites cannot handle at the edge.
 // https://vercel.com/docs/rewrites

@@ -45,7 +45,7 @@ Steps 2 and 3 follow the same precedence as Vercel.
 ```json [package.json]
 {
   "engines": {
-    "node": "24.x"
+    "node": "26.x"
   }
 }
 ```
