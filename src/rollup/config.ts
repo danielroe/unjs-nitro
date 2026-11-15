@@ -531,7 +531,9 @@ export const plugins = [
   rollupConfig.plugins.push(json());
 
   // https://github.com/rollup/plugins/tree/master/packages/inject
-  rollupConfig.plugins.push(inject(env.inject));
+  if (Object.keys(env.inject).length > 0) {
+    rollupConfig.plugins.push(inject(env.inject));
+  }
 
   // https://www.npmjs.com/package/@rollup/plugin-terser
   // https://github.com/terser/terser#minify-options
