@@ -38,6 +38,7 @@ export class NodeDevWorker implements DevWorker {
   #address?: WorkerAddress;
   #proxy?: HTTPProxy;
   #worker?: Worker & { _exitCode?: number };
+  #inflight = new Set<Promise<void>>();
 
   constructor(id: number, workerDir: string, hooks: WorkerHooks = {}) {
     this.#id = id;
@@ -54,13 +55,19 @@ export class NodeDevWorker implements DevWorker {
   }
 
   async handleEvent(event: H3Event) {
-    if (!this.#address || !this.#proxy) {
+    if (!this.ready || !this.#address || !this.#proxy) {
       throw createError({
         status: 503,
         statusText: "Dev worker is unavailable",
       });
     }
-    await this.#proxy.handleEvent(event, { target: this.#address });
+    const request = this.#proxy.handleEvent(event, { target: this.#address });
+    this.#inflight.add(request);
+    try {
+      await request;
+    } finally {
+      this.#inflight.delete(request);
+    }
   }
 
   handleUpgrade(req: IncomingMessage, socket: Socket, head: any) {
@@ -117,9 +124,31 @@ export class NodeDevWorker implements DevWorker {
     this.#hooks.onClose?.(this, cause);
     this.#hooks = {};
     const onError = (error: unknown) => consola.error(error);
+    await this.#drainRequests().catch(onError);
     await this.#closeWorker().catch(onError);
     await this.#closeProxy().catch(onError);
     await this.#closeSocket().catch(onError);
+  }
+
+  async #drainRequests() {
+    if (this.#inflight.size === 0) {
+      return;
+    }
+    const timeoutSec =
+      Number.parseInt(process.env.NITRO_SHUTDOWN_TIMEOUT || "", 10) || 5;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      Promise.allSettled(this.#inflight),
+      new Promise<void>((resolve) => {
+        timeout = setTimeout(() => {
+          consola.warn(
+            `force closing dev worker with ${this.#inflight.size} request(s) in flight`
+          );
+          resolve();
+        }, timeoutSec * 1000);
+      }),
+    ]);
+    clearTimeout(timeout);
   }
 
   async #closeProxy() {
